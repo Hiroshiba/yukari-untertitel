@@ -5,6 +5,12 @@
     <meta charset="UTF-8">
     <title>Web Speech API</title>
     <script>
+        let flushFlag = true
+
+        setInterval(function () {
+            flushFlag = true;
+        }, 1000)
+
         function vrFunction() {
             window.SpeechRecognition = window.SpeechRecognition || webkitSpeechRecognition;
             var recognition = new webkitSpeechRecognition();
@@ -20,6 +26,7 @@
             };
             recognition.onerror = function () {
                 console.log("エラー");
+                vrFunction();
             };
             recognition.onsoundend = function () {
                 console.log("停止中");
@@ -27,6 +34,11 @@
             };
 
             recognition.onresult = function (event) {
+                if (!flushFlag) {
+                    return;
+                }
+                flushFlag = false;
+
                 let text = '';
                 var results = event.results;
                 for (var i = event.resultIndex; i < results.length; i++) {
