@@ -5,12 +5,44 @@
     <meta charset="UTF-8">
     <title>Web Speech API</title>
     <script>
-        let flushFlag = true
+        let flushFlag = false
+        let flushTimer = null
+        let clearTimer = null
 
-        setInterval(function () {
-            flushFlag = true;
-        }, 1000)
+        function setText(text) {
+            document.getElementById('result_text').innerHTML = text
+        }
+        
+        function startFlushTimer() {
+            stopFlushTimer()
+            flushTimer = setTimeout(() => {
+                flushFlag = true
+                flushTimer = null
+            }, 1000);
+        }
 
+        function stopFlushTimer() {
+            if (flushTimer != null) {
+                clearTimeout(flushTimer)
+                flushTimer = null
+            }
+        }
+
+        function startClearTimer() {
+            stopClearTimer()
+            clearTimer = setTimeout(() => {
+                setText("")
+                clearTimer = null
+            }, 2500);
+        }
+
+        function stopClearTimer() {
+            if (clearTimer != null) {
+                clearTimeout(clearTimer)
+                clearTimer = null
+            }
+        }
+ 
         function vrFunction() {
             window.SpeechRecognition = window.SpeechRecognition || webkitSpeechRecognition;
             var recognition = new webkitSpeechRecognition();
@@ -34,17 +66,30 @@
             };
 
             recognition.onresult = function (event) {
-                if (!flushFlag) {
-                    return;
-                }
-                flushFlag = false;
-
                 let text = '';
+                let isFinal = false
                 var results = event.results;
                 for (var i = event.resultIndex; i < results.length; i++) {
                     text += results[i][0].transcript;
+
+                    isFinal = isFinal || results[i].isFinal
                 }
-                document.getElementById('result_text').innerHTML = text;
+
+                let iLast = results.length - 1
+                if (results[iLast][0].confidence > 0.5 || flushFlag) {
+                    setText(text)
+                    startFlushTimer()
+                }
+                
+                if (!isFinal) {
+                    stopClearTimer()
+                }
+                else {
+                    startClearTimer()
+                    stopFlushTimer()
+                }
+                
+                flushFlag = false;
             }
             recognition.start();
         }
