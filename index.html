@@ -51,9 +51,13 @@
             startFlushTimer()
         }
 
-        function onSpeechProcess(text, isPhrase) {
-            console.log('on speech process', 'isPhrase', isPhrase)
-            if (isPhrase || flushFlag) {
+        function onSpeechProcess(text, isPhraseStart, isPhraseEnd) {
+            console.log('on speech process', 'istart', isPhraseStart, 'isend', isPhraseEnd)
+            if (isPhraseStart) {
+                startFlushTimer()
+            }
+
+            if (isPhraseEnd || flushFlag) {
                 setText(text)
                 startFlushTimer()
             }
@@ -91,6 +95,7 @@
             };
 
             let isFirstResult = true
+            let isPhraseStart = true
             recognition.onresult = function (event) {
                 let text = '';
                 let isFinal = false
@@ -104,15 +109,24 @@
                 if(isFirstResult) {
                     isFirstResult = false
                     onSpeechStart()
+                    return
                 }
-                else if(!isFinal) {
+                
+                let isPhraseEnd = false
+                if(!isFinal) {
                     const lastIndex = results.length - 1
-                    let isPhrase = (results[lastIndex][0].confidence > 0.5)
-                    onSpeechProcess(text, isPhrase)
+                    isPhraseEnd = (results[lastIndex][0].confidence > 0.5)
+                    onSpeechProcess(text, isPhraseStart, isPhraseEnd)
                 }
                 else {
                     isFirstResult = true
+                    isPhraseEnd = true
                     onSpeechStop(text)
+                }
+                
+                isPhraseStart = false
+                if(isPhraseEnd) {
+                    isPhraseStart = true
                 }
             }
             recognition.start();
